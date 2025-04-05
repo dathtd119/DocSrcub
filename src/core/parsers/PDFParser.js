@@ -7,8 +7,9 @@
 import * as pdfjs from 'pdfjs-dist';
 import { generateId } from '../utils.js';
 
-// Skip worker setup in the browser - use built-in fake worker
-pdfjs.GlobalWorkerOptions.workerSrc = "";
+// Initialize PDF.js worker
+// This fixes the "No GlobalWorkerOptions.workerSrc specified" error
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 export class PDFParser {
   constructor() {
@@ -30,12 +31,12 @@ export class PDFParser {
       console.log("Starting PDF parsing for file:", file.name);
       const arrayBuffer = await file.arrayBuffer();
       
-      // Disable workers to avoid the issue with worker loading
+      // Configure the PDF.js document loading
       const loadingTask = pdfjs.getDocument({
         data: arrayBuffer,
-        disableWorker: true,
-        disableAutoFetch: true,
-        isEvalSupported: false
+        // For large documents, these options improve performance
+        nativeImageDecoderSupport: 'none',
+        ignoreErrors: true
       });
       
       const pdf = await loadingTask.promise;

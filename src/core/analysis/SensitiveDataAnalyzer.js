@@ -94,8 +94,7 @@ export class SensitiveDataAnalyzer {
           end: match.index + matchText.length,
         }],
         confidence,
-        selected: false, // Default to not selected
-=======
+        selected: false // Default to not selected
       });
     }
   }

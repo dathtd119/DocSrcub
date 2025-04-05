@@ -4,12 +4,12 @@
  * Handles parsing of PDF documents using pdf.js
  */
 
-import * as pdfjs from 'pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 import { generateId } from '../utils.js';
 
 // Initialize PDF.js worker
-// This fixes the "No GlobalWorkerOptions.workerSrc specified" error
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+// We need to set the worker source to enable multi-threading
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 export class PDFParser {
   constructor() {
@@ -29,10 +29,12 @@ export class PDFParser {
   async parse(file) {
     try {
       console.log("Starting PDF parsing for file:", file.name);
+      console.log("Using PDF.js version:", pdfjsLib.version);
+      
       const arrayBuffer = await file.arrayBuffer();
       
       // Configure the PDF.js document loading
-      const loadingTask = pdfjs.getDocument({
+      const loadingTask = pdfjsLib.getDocument({
         data: arrayBuffer,
         // For large documents, these options improve performance
         nativeImageDecoderSupport: 'none',

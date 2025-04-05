@@ -94,7 +94,8 @@ export class SensitiveDataAnalyzer {
           end: match.index + matchText.length,
         }],
         confidence,
-        selected: confidence > 0.7, // Pre-select high-confidence items
+        selected: false, // Default to not selected
+=======
       });
     }
   }
@@ -184,22 +185,31 @@ export class SensitiveDataAnalyzer {
   }
   
   /**
-   * Process results to remove duplicates and sort by confidence
+   * Process results to group duplicate texts and sort by confidence
    */
   processResults(items) {
-    // Deduplicate by text (keeping the highest confidence)
-    const uniqueItems = new Map();
+    // Group by text, preserving positions
+    const groupedItems = new Map();
     
     for (const item of items) {
-      const existingItem = uniqueItems.get(item.text);
+      const existingItem = groupedItems.get(item.text);
       
-      if (!existingItem || item.confidence > existingItem.confidence) {
-        uniqueItems.set(item.text, item);
+      if (existingItem) {
+        // Add the position to existing item's positions
+        existingItem.positions.push(...item.positions);
+        
+        // Update confidence if higher
+        if (item.confidence > existingItem.confidence) {
+          existingItem.confidence = item.confidence;
+        }
+      } else {
+        // Create a new item
+        groupedItems.set(item.text, { ...item });
       }
     }
     
     // Convert to array and sort by confidence (descending)
-    return Array.from(uniqueItems.values())
+    return Array.from(groupedItems.values())
       .sort((a, b) => b.confidence - a.confidence);
   }
   

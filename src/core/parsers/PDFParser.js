@@ -7,9 +7,8 @@
 import * as pdfjs from 'pdfjs-dist';
 import { generateId } from '../utils.js';
 
-// Set the worker path (needed for pdf.js)
-const pdfjsWorker = new URL('pdfjs-dist/build/pdf.worker.min.js', import.meta.url);
-pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker.toString();
+// Skip worker setup in the browser - use built-in fake worker
+pdfjs.GlobalWorkerOptions.workerSrc = "";
 
 export class PDFParser {
   constructor() {
@@ -28,8 +27,19 @@ export class PDFParser {
    */
   async parse(file) {
     try {
+      console.log("Starting PDF parsing for file:", file.name);
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+      
+      // Disable workers to avoid the issue with worker loading
+      const loadingTask = pdfjs.getDocument({
+        data: arrayBuffer,
+        disableWorker: true,
+        disableAutoFetch: true,
+        isEvalSupported: false
+      });
+      
+      const pdf = await loadingTask.promise;
+      console.log(`PDF loaded successfully with ${pdf.numPages} pages`);
       
       const metadata = {
         pageCount: pdf.numPages,
@@ -42,6 +52,7 @@ export class PDFParser {
       
       // Process each page
       for (let i = 1; i <= pdf.numPages; i++) {
+        console.log(`Processing page ${i} of ${pdf.numPages}`);
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
         
@@ -125,6 +136,7 @@ export class PDFParser {
         console.warn("Failed to parse PDF metadata:", error);
       }
       
+      console.log("PDF parsing complete:", file.name);
       return {
         content: fullText,
         metadata,

@@ -13,6 +13,24 @@
     <!-- Category counts will be inserted here dynamically -->
   </div>
   
+  <div class="custom-redaction mb-4 border-b border-gray-100 pb-4">
+    <h4 class="font-medium mb-2">Add Custom Text to Redact</h4>
+    <div class="flex gap-2">
+      <input 
+        type="text" 
+        id="custom-redaction-text" 
+        placeholder="Enter text to redact..." 
+        class="flex-grow border border-gray-300 rounded-md px-3 py-2"
+      />
+      <button 
+        id="add-custom-redaction-btn" 
+        class="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+      >
+        Add
+      </button>
+    </div>
+  </div>
+  
   <div class="controls mb-4 flex flex-wrap gap-4">
     <button 
       id="select-all-btn" 
@@ -52,25 +70,35 @@
     </div>
   </div>
   
-  <div class="items-container max-h-96 overflow-y-auto">
+  <div class="items-container max-h-96 overflow-y-auto" id="items-container">
     <table class="w-full text-left text-sm">
-      <thead class="bg-gray-50 text-gray-600">
+      <thead class="bg-gray-50 text-gray-600 sticky top-0">
         <tr>
           <th class="p-3 rounded-tl-lg">Select</th>
           <th class="p-3">Text</th>
           <th class="p-3">Category</th>
+          <th class="p-3">Occurrences</th>
           <th class="p-3 rounded-tr-lg">Confidence</th>
         </tr>
       </thead>
       <tbody id="sensitive-items-tbody">
         <!-- Items will be populated dynamically -->
         <tr class="border-b border-gray-100">
-          <td colspan="4" class="p-4 text-center text-gray-500">
+          <td colspan="5" class="p-4 text-center text-gray-500">
             Processing document... Please wait.
           </td>
         </tr>
       </tbody>
     </table>
+  </div>
+  
+  <div id="load-more-container" class="mt-4 text-center hidden">
+    <button 
+      id="load-more-btn" 
+      class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+    >
+      See More Items
+    </button>
   </div>
   
   <div class="no-items-message hidden text-center p-4 text-gray-500" id="no-items-message">
@@ -156,8 +184,12 @@
     const wholeWord = document.getElementById('whole-word');
     const applyRedactionsBtn = document.getElementById('apply-redactions-btn');
     const categoryCounts = document.querySelector('.category-counts');
+    const customRedactionText = document.getElementById('custom-redaction-text');
+    const addCustomRedactionBtn = document.getElementById('add-custom-redaction-btn');
     
     let sensitiveItems = [];
+    let displayLimit = 5; // Initial number of items to display
+    let isShowingAll = false; // Track if showing all items
     
     // Handle showing sensitive items
     document.addEventListener('sensitive-items-detected', (event) => {
@@ -231,16 +263,22 @@
         const row = document.createElement('tr');
         row.className = 'border-b border-gray-100';
         row.innerHTML = `
-          <td colspan="4" class="p-4 text-center text-gray-500">
+          <td colspan="5" class="p-4 text-center text-gray-500">
             No items found for this category.
           </td>
         `;
         sensitiveItemsTbody.appendChild(row);
+        
+        // Hide load more button
+        document.getElementById('load-more-container')?.classList.add('hidden');
         return;
       }
       
-      // Add rows for each item
-      filteredItems.forEach((item, index) => {
+      // Determine how many items to show
+      const itemsToShow = isShowingAll ? filteredItems.length : Math.min(displayLimit, filteredItems.length);
+      
+      // Add rows for visible items
+      filteredItems.slice(0, itemsToShow).forEach((item, index) => {
         const row = document.createElement('tr');
         row.className = 'border-b border-gray-100 hover:bg-gray-50';
         row.dataset.id = item.id;
@@ -256,6 +294,9 @@
           confidenceClass = 'text-red-600';
         }
         
+        // Calculate occurrences by counting positions
+        const occurrences = item.positions.length;
+        
         row.innerHTML = `
           <td class="p-3">
             <input 
@@ -267,6 +308,7 @@
           </td>
           <td class="p-3 font-medium">${item.text}</td>
           <td class="p-3">${formatCategory(item.category)}</td>
+          <td class="p-3">${occurrences}</td>
           <td class="p-3 ${confidenceClass}">${confidencePercent}%</td>
         `;
         
@@ -287,6 +329,16 @@
           }
         });
       });
+      
+      // Show or hide the "See More" button
+      const loadMoreContainer = document.getElementById('load-more-container');
+      if (loadMoreContainer) {
+        if (filteredItems.length > itemsToShow) {
+          loadMoreContainer.classList.remove('hidden');
+        } else {
+          loadMoreContainer.classList.add('hidden');
+        }
+      }
     }
     
     // Event: Select all button
@@ -307,8 +359,57 @@
     
     // Event: Category filter change
     categoryFilter?.addEventListener('change', () => {
+      // Reset pagination when changing categories
+      isShowingAll = false;
+      displayLimit = 5;
       renderSensitiveItems();
     });
+    
+    // Event: Load more button
+    document.getElementById('load-more-btn')?.addEventListener('click', () => {
+      if (isShowingAll) {
+        // If already showing all, do nothing
+        return;
+      }
+      
+      // Double the display limit
+      displayLimit *= 2;
+      
+      // Re-render the list
+      renderSensitiveItems();
+      
+      // Check if we've shown all items
+      const selectedCategory = categoryFilter?.value || 'all';
+      const filteredItems = selectedCategory === 'all' 
+        ? sensitiveItems 
+        : sensitiveItems.filter(item => item.category === selectedCategory);
+      
+      if (displayLimit >= filteredItems.length) {
+        isShowingAll = true;
+        // Change button text
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        if (loadMoreBtn) {
+          loadMoreBtn.textContent = "All Items Loaded";
+          loadMoreBtn.disabled = true;
+        }
+      }
+    });
+    
+    // Setup infinite scroll
+    const itemsContainer = document.getElementById('items-container');
+    if (itemsContainer) {
+      itemsContainer.addEventListener('scroll', () => {
+        if (isShowingAll) return; // Skip if already showing all
+        
+        // If user has scrolled to the bottom, load more
+        if (itemsContainer.scrollHeight - itemsContainer.scrollTop <= itemsContainer.clientHeight + 100) {
+          const loadMoreBtn = document.getElementById('load-more-btn');
+          if (loadMoreBtn && !loadMoreBtn.disabled) {
+            loadMoreBtn.click();
+          }
+        }
+      });
+    }
     
     // Event: Redaction method change
     redactionMethod?.addEventListener('change', () => {
@@ -318,6 +419,53 @@
       } else if (replacementText && replacementTextGroup) {
         replacementText.disabled = true;
         replacementTextGroup.classList.add('opacity-50');
+      }
+    });
+    
+    // Event: Add custom redaction
+    addCustomRedactionBtn?.addEventListener('click', () => {
+      if (customRedactionText && customRedactionText.value.trim()) {
+        // Generate a unique ID for this custom item
+        const customId = 'custom-' + Date.now();
+        
+        // Create a new sensitive item
+        const customItem = {
+          id: customId,
+          text: customRedactionText.value.trim(),
+          category: 'other',
+          positions: [{
+            sectionId: 'custom',
+            start: 0,
+            end: customRedactionText.value.length
+          }],
+          confidence: 1.0, // Custom items have 100% confidence
+          selected: true, // Automatically select custom items
+          isCustom: true
+        };
+        
+        // Add to sensitive items
+        sensitiveItems.push(customItem);
+        
+        // Clear the input
+        customRedactionText.value = '';
+        
+        // Update the display
+        updateCategoryCounts(sensitiveItems);
+        renderSensitiveItems();
+        
+        // Enable apply button if disabled
+        if (applyRedactionsBtn) {
+          applyRedactionsBtn.disabled = false;
+        }
+        
+        console.log("Added custom redaction item:", customItem.text);
+      }
+    });
+    
+    // Handle Enter key for custom redaction
+    customRedactionText?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && customRedactionText.value.trim()) {
+        addCustomRedactionBtn.click();
       }
     });
     

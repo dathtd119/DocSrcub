@@ -80,10 +80,18 @@ class ParserRegistry {
         case 'md':
           extensions.push('.md', '.markdown');
           break;
+        case 'office':
+          // The office parser handles multiple formats
+          extensions.push(
+            '.docx', '.pptx', '.xlsx',
+            '.odt', '.odp', '.ods', '.pdf'
+          );
+          break;
       }
     });
     
-    return extensions;
+    // Remove duplicates
+    return [...new Set(extensions)];
   }
   
   /**

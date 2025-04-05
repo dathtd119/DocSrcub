@@ -14,7 +14,7 @@ A privacy-first document redaction tool that operates entirely in the browser. D
 ## ✨ Key Features
 
 - **Intelligent Detection**: Automatically identifies potential sensitive information like names, emails, phone numbers, addresses, etc.
-- **Multiple File Formats**: Supports PDF, DOCX, TXT, CSV, XLSX, and more
+- **Multiple File Formats**: Supports PDF, DOCX, PPTX, XLSX, ODT, ODP, ODS, TXT, CSV, and more
 - **Customizable Redaction**: Choose what to redact and how to redact it (asterisks, blackout, or custom replacement text)
 - **Interactive Preview**: See the original and redacted versions side-by-side
 - **Easy Download**: Get your redacted document with a single click
@@ -24,6 +24,7 @@ A privacy-first document redaction tool that operates entirely in the browser. D
 - **[Astro.js](https://astro.build/)**: Framework for building fast, content-focused websites
 - **[Tailwind CSS](https://tailwindcss.com/)**: Utility-first CSS framework
 - **Document Processing Libraries**:
+  - [officeparser](https://www.npmjs.com/package/officeparser): Multi-format document parser for docx, pptx, xlsx, odt, odp, ods, pdf
   - PDF.js: For parsing PDF files
   - Mammoth.js: For parsing DOCX files
   - SheetJS: For parsing Excel files
@@ -117,14 +118,18 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 🔄 Recent Updates
 
+- **Enhanced File Format Support**: Added support for additional file formats like PPTX, ODT, ODP, and ODS using the officeparser library
 - **Real Data Processing**: Replaced sample data with actual document processing and sensitive information detection
 - **End-to-End Integration**: Integrated document parsing, analysis, and redaction engines
 - **Improved Error Handling**: Added more robust error handling for document processing
 
 ## 🔮 Future Enhancements
 
-- Additional file format support (PPTX, HTML, etc.)
 - Enhanced detection of sensitive information through machine learning
 - Support for batch processing multiple files
 - Advanced redaction options (partial redaction, regex patterns, etc.)
 - Improved accessibility features
+
+## 🙏 Acknowledgments
+
+- [officeparser](https://www.npmjs.com/package/officeparser) - A comprehensive library for parsing various office document formats

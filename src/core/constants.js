@@ -10,7 +10,10 @@ export const SUPPORTED_FILE_TYPES = [
   'txt', 
   'csv', 
   'xlsx', 
-  'pptx', 
+  'pptx',
+  'odt',
+  'odp',
+  'ods',
   'html', 
   'md'
 ];

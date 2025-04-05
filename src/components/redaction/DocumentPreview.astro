@@ -1,0 +1,189 @@
+---
+/**
+ * Document Preview Component
+ * 
+ * Displays a preview of the document with redactions
+ */
+---
+
+<div id="document-preview" class="hidden">
+  <div class="bg-white rounded-xl shadow-card p-6 mb-6">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-semibold">Document Preview</h3>
+      
+      <div class="view-options flex space-x-2">
+        <button 
+          id="view-original-btn" 
+          class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+        >
+          Original
+        </button>
+        <button 
+          id="view-redacted-btn" 
+          class="px-3 py-1 text-sm bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
+        >
+          Redacted
+        </button>
+      </div>
+    </div>
+    
+    <div id="document-metadata" class="text-sm text-gray-600 border-b border-gray-100 pb-3 mb-4">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div>
+          <span class="font-medium">Filename:</span> <span id="doc-filename">document.pdf</span>
+        </div>
+        <div>
+          <span class="font-medium">Size:</span> <span id="doc-filesize">0 KB</span>
+        </div>
+        <div>
+          <span class="font-medium">Words:</span> <span id="doc-wordcount">0</span>
+        </div>
+        <div>
+          <span class="font-medium">Pages:</span> <span id="doc-pagecount">0</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="preview-container mt-4 border border-gray-200 rounded-lg p-4 bg-gray-50 min-h-[300px] max-h-[600px] overflow-y-auto">
+      <pre id="preview-content" class="text-sm font-sans whitespace-pre-wrap"></pre>
+    </div>
+  </div>
+  
+  <div class="actions text-center mb-8">
+    <button 
+      id="download-btn" 
+      class="px-8 py-3 bg-primary-500 text-white rounded-lg shadow-md hover:bg-primary-600 transition-colors"
+    >
+      Download Redacted Document
+    </button>
+  </div>
+</div>
+
+<script>
+  // Document preview functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    const documentPreview = document.getElementById('document-preview');
+    const previewContent = document.getElementById('preview-content');
+    const viewOriginalBtn = document.getElementById('view-original-btn');
+    const viewRedactedBtn = document.getElementById('view-redacted-btn');
+    const docFilename = document.getElementById('doc-filename');
+    const docFilesize = document.getElementById('doc-filesize');
+    const docWordcount = document.getElementById('doc-wordcount');
+    const docPagecount = document.getElementById('doc-pagecount');
+    const downloadBtn = document.getElementById('download-btn');
+    
+    let originalDocument = null;
+    let redactedDocument = null;
+    let currentView = 'original';
+    
+    // Event: Document parsed
+    document.addEventListener('document-parsed', (event: Event) => {
+      const customEvent = event as CustomEvent;
+      originalDocument = customEvent.detail?.document;
+      
+      if (documentPreview && originalDocument) {
+        documentPreview.classList.remove('hidden');
+        updateDocumentMetadata(originalDocument);
+        updatePreviewContent(originalDocument.content);
+      }
+    });
+    
+    // Event: Redactions applied
+    document.addEventListener('redactions-applied', (event: Event) => {
+      const customEvent = event as CustomEvent;
+      redactedDocument = customEvent.detail?.document;
+      
+      if (redactedDocument) {
+        currentView = 'redacted';
+        updatePreviewContent(redactedDocument.content);
+        
+        // Activate the redacted view button
+        if (viewOriginalBtn && viewRedactedBtn) {
+          viewOriginalBtn.classList.remove('bg-primary-100', 'text-primary-700');
+          viewOriginalBtn.classList.add('bg-gray-100', 'text-gray-700');
+          
+          viewRedactedBtn.classList.remove('bg-gray-100', 'text-gray-700');
+          viewRedactedBtn.classList.add('bg-primary-100', 'text-primary-700');
+        }
+      }
+    });
+    
+    // Event: View original button
+    viewOriginalBtn?.addEventListener('click', () => {
+      if (originalDocument) {
+        currentView = 'original';
+        updatePreviewContent(originalDocument.content);
+        
+        // Update button styles
+        viewOriginalBtn.classList.remove('bg-gray-100', 'text-gray-700');
+        viewOriginalBtn.classList.add('bg-primary-100', 'text-primary-700');
+        
+        viewRedactedBtn?.classList.remove('bg-primary-100', 'text-primary-700');
+        viewRedactedBtn?.classList.add('bg-gray-100', 'text-gray-700');
+      }
+    });
+    
+    // Event: View redacted button
+    viewRedactedBtn?.addEventListener('click', () => {
+      if (redactedDocument) {
+        currentView = 'redacted';
+        updatePreviewContent(redactedDocument.content);
+        
+        // Update button styles
+        viewRedactedBtn.classList.remove('bg-gray-100', 'text-gray-700');
+        viewRedactedBtn.classList.add('bg-primary-100', 'text-primary-700');
+        
+        viewOriginalBtn?.classList.remove('bg-primary-100', 'text-primary-700');
+        viewOriginalBtn?.classList.add('bg-gray-100', 'text-gray-700');
+      }
+    });
+    
+    // Event: Download button
+    downloadBtn?.addEventListener('click', () => {
+      if (redactedDocument) {
+        document.dispatchEvent(new CustomEvent('download-document', {
+          detail: { document: redactedDocument }
+        }));
+      }
+    });
+    
+    // Update document metadata display
+    function updateDocumentMetadata(document) {
+      if (docFilename) {
+        docFilename.textContent = document.filename;
+      }
+      
+      if (docFilesize) {
+        docFilesize.textContent = formatFileSize(document.fileSize);
+      }
+      
+      if (docWordcount && document.metadata.wordCount !== undefined) {
+        docWordcount.textContent = document.metadata.wordCount.toString();
+      }
+      
+      if (docPagecount && document.metadata.pageCount !== undefined) {
+        docPagecount.textContent = document.metadata.pageCount.toString();
+      }
+    }
+    
+    // Update preview content
+    function updatePreviewContent(content) {
+      if (previewContent) {
+        previewContent.textContent = content;
+      }
+    }
+    
+    // Format file size for display
+    function formatFileSize(bytes) {
+      if (bytes < 1024) {
+        return bytes + ' bytes';
+      } else if (bytes < 1024 * 1024) {
+        return (bytes / 1024).toFixed(1) + ' KB';
+      } else if (bytes < 1024 * 1024 * 1024) {
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+      } else {
+        return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+      }
+    }
+  });
+</script>

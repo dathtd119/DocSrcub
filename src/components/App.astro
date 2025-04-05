@@ -1,0 +1,231 @@
+---
+/**
+ * Main App Component
+ * 
+ * Orchestrates the document redaction workflow
+ */
+import FileUploader from './upload/FileUploader.astro';
+import SensitiveItemsList from './redaction/SensitiveItemsList.astro';
+import DocumentPreview from './redaction/DocumentPreview.astro';
+---
+
+<main class="container mx-auto px-4 py-8">
+  <div class="app-steps space-y-8">
+    <section id="step-upload" class="step">
+      <div class="step-header flex items-center mb-4">
+        <div class="step-number w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center mr-3 font-medium">
+          1
+        </div>
+        <h2 class="text-2xl font-semibold">Upload Your Document</h2>
+      </div>
+      
+      <FileUploader />
+    </section>
+    
+    <section id="step-redact" class="step opacity-50 pointer-events-none transition-opacity duration-300">
+      <div class="step-header flex items-center mb-4">
+        <div class="step-number w-8 h-8 rounded-full bg-gray-300 text-white flex items-center justify-center mr-3 font-medium">
+          2
+        </div>
+        <h2 class="text-2xl font-semibold">Review & Select Content to Redact</h2>
+      </div>
+      
+      <SensitiveItemsList />
+    </section>
+    
+    <section id="step-preview" class="step opacity-50 pointer-events-none transition-opacity duration-300">
+      <div class="step-header flex items-center mb-4">
+        <div class="step-number w-8 h-8 rounded-full bg-gray-300 text-white flex items-center justify-center mr-3 font-medium">
+          3
+        </div>
+        <h2 class="text-2xl font-semibold">Review & Download</h2>
+      </div>
+      
+      <DocumentPreview />
+    </section>
+  </div>
+</main>
+
+<script>
+  // Import client-side only modules
+  import { parserRegistry } from '../core/parsers';
+  import { sensitiveDataAnalyzer } from '../core/analysis/SensitiveDataAnalyzer';
+  import { redactionEngine } from '../core/redaction/RedactionEngine';
+  
+  // Main app functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    const stepUpload = document.getElementById('step-upload');
+    const stepRedact = document.getElementById('step-redact');
+    const stepPreview = document.getElementById('step-preview');
+    
+    let currentFile = null;
+    let parsedDocument = null;
+    let sensitiveItems = [];
+    let redactedDocument = null;
+    
+    // Event: File selected
+    document.addEventListener('file-selected', async (event: Event) => {
+      try {
+        const customEvent = event as CustomEvent;
+        currentFile = customEvent.detail?.file;
+        
+        if (!currentFile) {
+          throw new Error('No file selected');
+        }
+        
+        // Check if we support this file type
+        if (!parserRegistry.hasParserForFile(currentFile)) {
+          throw new Error(`Unsupported file type: ${currentFile.type || 'unknown'}`);
+        }
+        
+        // Reset the UI state
+        resetUIState();
+        
+        // Wait for upload to complete (in a real app, you'd handle actual upload)
+        await new Promise(resolve => {
+          document.addEventListener('file-upload-complete', resolve, { once: true });
+        });
+        
+        // Try to parse the file
+        await parseDocument(currentFile);
+        
+        // Analyze for sensitive information
+        analyzeDocument(parsedDocument);
+        
+        // Activate the redaction step
+        activateStep(stepRedact);
+      } catch (error) {
+        console.error('Error processing file:', error);
+        document.dispatchEvent(new CustomEvent('file-upload-error', {
+          detail: { error: error.message }
+        }));
+      }
+    });
+    
+    // Event: Apply redactions
+    document.addEventListener('apply-redactions', (event: Event) => {
+      try {
+        const customEvent = event as CustomEvent;
+        const selectedItems = customEvent.detail?.items || [];
+        const options = customEvent.detail?.options || {};
+        
+        if (!parsedDocument) {
+          throw new Error('No document to redact');
+        }
+        
+        // Apply redactions to the document
+        redactedDocument = redactionEngine.applyRedactions(parsedDocument, selectedItems, options);
+        
+        // Dispatch event with redacted document
+        document.dispatchEvent(new CustomEvent('redactions-applied', {
+          detail: { document: redactedDocument }
+        }));
+        
+        // Activate the preview step
+        activateStep(stepPreview);
+      } catch (error) {
+        console.error('Error applying redactions:', error);
+        alert(`Error applying redactions: ${error.message}`);
+      }
+    });
+    
+    // Event: Download document
+    document.addEventListener('download-document', async (event: Event) => {
+      try {
+        const customEvent = event as CustomEvent;
+        const document = customEvent.detail?.document;
+        
+        if (!document) {
+          throw new Error('No document to download');
+        }
+        
+        // Export the document
+        await redactionEngine.exportDocument(document);
+      } catch (error) {
+        console.error('Error downloading document:', error);
+        alert(`Error downloading document: ${error.message}`);
+      }
+    });
+    
+    // Parse a document file
+    async function parseDocument(file) {
+      const parser = parserRegistry.getParserForFile(file);
+      
+      if (!parser) {
+        throw new Error(`No parser available for file: ${file.name}`);
+      }
+      
+      parsedDocument = await parser.parse(file);
+      
+      // Dispatch event with parsed document
+      document.dispatchEvent(new CustomEvent('document-parsed', {
+        detail: { document: parsedDocument }
+      }));
+      
+      return parsedDocument;
+    }
+    
+    // Analyze a document for sensitive information
+    function analyzeDocument(document) {
+      if (!document) return;
+      
+      sensitiveItems = sensitiveDataAnalyzer.analyze(document);
+      
+      // Dispatch event with sensitive items
+      document.dispatchEvent(new CustomEvent('sensitive-items-detected', {
+        detail: { items: sensitiveItems }
+      }));
+      
+      return sensitiveItems;
+    }
+    
+    // Reset the UI state
+    function resetUIState() {
+      // Hide redaction and preview steps
+      if (stepRedact) {
+        stepRedact.classList.add('opacity-50', 'pointer-events-none');
+        document.querySelector('#step-redact .step-number')?.classList.remove('bg-primary-500');
+        document.querySelector('#step-redact .step-number')?.classList.add('bg-gray-300');
+      }
+      
+      if (stepPreview) {
+        stepPreview.classList.add('opacity-50', 'pointer-events-none');
+        document.querySelector('#step-preview .step-number')?.classList.remove('bg-primary-500');
+        document.querySelector('#step-preview .step-number')?.classList.add('bg-gray-300');
+      }
+      
+      // Hide document preview
+      const documentPreview = document.getElementById('document-preview');
+      if (documentPreview) {
+        documentPreview.classList.add('hidden');
+      }
+      
+      // Hide sensitive items list
+      const sensitiveItemsList = document.getElementById('sensitive-items-list');
+      if (sensitiveItemsList) {
+        sensitiveItemsList.classList.add('hidden');
+      }
+      
+      // Reset variables
+      parsedDocument = null;
+      sensitiveItems = [];
+      redactedDocument = null;
+    }
+    
+    // Activate a step in the UI
+    function activateStep(stepElement) {
+      if (!stepElement) return;
+      
+      stepElement.classList.remove('opacity-50', 'pointer-events-none');
+      
+      const stepNumber = stepElement.querySelector('.step-number');
+      if (stepNumber) {
+        stepNumber.classList.remove('bg-gray-300');
+        stepNumber.classList.add('bg-primary-500');
+      }
+      
+      // Scroll to the step
+      stepElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+</script>

@@ -1,0 +1,195 @@
+---
+/**
+ * File Uploader Component
+ */
+import { parserRegistry } from '../../core/parsers';
+
+// Get the supported file extensions
+const supportedExtensions = parserRegistry.getSupportedExtensions();
+const supportedFormats = parserRegistry.getSupportedFileTypes();
+---
+
+<div id="file-uploader" class="file-uploader">
+  <div 
+    id="drop-zone" 
+    class="drop-zone bg-white border-2 border-dashed border-primary-300 rounded-xl p-10 text-center transition-all duration-300 ease-in-out"
+  >
+    <div class="icon-container mb-4">
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        width="48" 
+        height="48" 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        stroke-width="2" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" 
+        class="text-primary-500 mx-auto"
+      >
+        <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+        <path d="M12 12v9"></path>
+        <path d="m16 16-4-4-4 4"></path>
+      </svg>
+    </div>
+    
+    <h3 class="text-lg font-semibold mb-2">Drag & Drop Your Document</h3>
+    <p class="text-gray-600 mb-4">or click to browse your files</p>
+    
+    <div class="supported-formats text-xs text-gray-500 mt-2">
+      Supported formats: <span>{supportedFormats}</span>
+    </div>
+    
+    <input 
+      type="file" 
+      id="file-input" 
+      class="hidden" 
+      accept={supportedExtensions.join(',')}
+    />
+    
+    <button 
+      id="browse-button" 
+      class="mt-4 px-6 py-2 bg-primary-500 text-white rounded-lg shadow-sm hover:bg-primary-600 transition-colors"
+    >
+      Browse Files
+    </button>
+  </div>
+  
+  <div id="upload-progress" class="upload-progress hidden mt-6">
+    <div class="flex justify-between text-sm mb-1">
+      <span id="file-name" class="text-gray-700">filename.pdf</span>
+      <span id="progress-percentage" class="text-primary-600">0%</span>
+    </div>
+    
+    <div class="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+      <div 
+        id="progress-bar" 
+        class="h-full bg-primary-500 transition-all duration-300 ease-out" 
+        style="width: 0%"
+      ></div>
+    </div>
+  </div>
+  
+  <div id="error-message" class="error-message hidden mt-4 p-3 bg-red-100 text-red-800 rounded-lg">
+    <p>Error uploading file: <span id="error-text"></span></p>
+  </div>
+</div>
+
+<script>
+  // File upload functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const browseButton = document.getElementById('browse-button');
+    const uploadProgress = document.getElementById('upload-progress');
+    const fileName = document.getElementById('file-name');
+    const progressBar = document.getElementById('progress-bar');
+    const progressPercentage = document.getElementById('progress-percentage');
+    const errorMessage = document.getElementById('error-message');
+    const errorText = document.getElementById('error-text');
+    
+    // Event: Click browse button
+    browseButton?.addEventListener('click', () => {
+      fileInput?.click();
+    });
+    
+    // Event: File selected via input
+    fileInput?.addEventListener('change', (event) => {
+      const input = event.target as HTMLInputElement;
+      if (input.files && input.files.length > 0) {
+        handleFile(input.files[0]);
+      }
+    });
+    
+    // Event: Drag over drop zone
+    dropZone?.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      dropZone.classList.add('border-primary-500', 'bg-primary-50');
+    });
+    
+    // Event: Drag leave drop zone
+    dropZone?.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-primary-500', 'bg-primary-50');
+    });
+    
+    // Event: Drop file on drop zone
+    dropZone?.addEventListener('drop', (event) => {
+      event.preventDefault();
+      dropZone.classList.remove('border-primary-500', 'bg-primary-50');
+      
+      if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
+        handleFile(event.dataTransfer.files[0]);
+      }
+    });
+    
+    // Handle the uploaded file
+    function handleFile(file: File) {
+      // Hide any previous errors
+      errorMessage?.classList.add('hidden');
+      
+      // Dispatch a custom event with the file
+      const uploadEvent = new CustomEvent('file-selected', {
+        detail: { file }
+      });
+      document.dispatchEvent(uploadEvent);
+      
+      // Show upload progress with file name
+      if (uploadProgress && fileName && progressBar && progressPercentage) {
+        fileName.textContent = file.name;
+        uploadProgress.classList.remove('hidden');
+        progressBar.style.width = '0%';
+        progressPercentage.textContent = '0%';
+        
+        // Simulate upload progress (in a real app, this would track actual progress)
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 5;
+          if (progress > 100) {
+            clearInterval(interval);
+            progress = 100;
+            
+            // Dispatch upload complete event
+            document.dispatchEvent(new CustomEvent('file-upload-complete', {
+              detail: { file }
+            }));
+          }
+          
+          progressBar.style.width = `${progress}%`;
+          progressPercentage.textContent = `${progress}%`;
+        }, 50);
+      }
+    }
+    
+    // Handle upload errors
+    document.addEventListener('file-upload-error', (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const error = customEvent.detail?.error || 'Unknown error';
+      
+      if (errorMessage && errorText) {
+        errorText.textContent = error;
+        errorMessage.classList.remove('hidden');
+      }
+      
+      if (uploadProgress) {
+        uploadProgress.classList.add('hidden');
+      }
+    });
+  });
+</script>
+
+<style>
+  .file-uploader {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .drop-zone {
+    cursor: pointer;
+  }
+  
+  .drop-zone:hover {
+    background-color: rgba(99, 102, 241, 0.05);
+    border-color: rgba(99, 102, 241, 0.5);
+  }
+</style>

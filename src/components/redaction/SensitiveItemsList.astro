@@ -1,0 +1,328 @@
+---
+/**
+ * Sensitive Items List Component
+ * 
+ * Displays the list of detected sensitive items for redaction
+ */
+---
+
+<div id="sensitive-items-list" class="bg-white rounded-xl shadow-card p-6 mb-6 hidden">
+  <h3 class="text-xl font-semibold mb-4">Detected Sensitive Information</h3>
+  
+  <div class="controls mb-4 flex flex-wrap gap-4">
+    <button 
+      id="select-all-btn" 
+      class="px-4 py-2 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
+    >
+      Select All
+    </button>
+    
+    <button 
+      id="deselect-all-btn" 
+      class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+    >
+      Deselect All
+    </button>
+    
+    <div class="categories flex-grow flex justify-end">
+      <div class="filter flex items-center space-x-2">
+        <label for="category-filter" class="text-sm text-gray-600">Filter:</label>
+        <select 
+          id="category-filter" 
+          class="text-sm border border-gray-300 rounded-md px-2 py-1"
+        >
+          <option value="all">All Categories</option>
+          <option value="name">Names</option>
+          <option value="email">Emails</option>
+          <option value="phone">Phone Numbers</option>
+          <option value="address">Addresses</option>
+          <option value="ssn">SSNs</option>
+          <option value="creditcard">Credit Cards</option>
+          <option value="date">Dates</option>
+          <option value="organization">Organizations</option>
+          <option value="financial">Financial Info</option>
+          <option value="medical">Medical Info</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  
+  <div class="items-container max-h-96 overflow-y-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-gray-50 text-gray-600">
+        <tr>
+          <th class="p-3 rounded-tl-lg">Select</th>
+          <th class="p-3">Text</th>
+          <th class="p-3">Category</th>
+          <th class="p-3 rounded-tr-lg">Confidence</th>
+        </tr>
+      </thead>
+      <tbody id="sensitive-items-tbody">
+        <!-- Items will be populated dynamically -->
+        <tr class="border-b border-gray-100">
+          <td colspan="4" class="p-4 text-center text-gray-500">
+            Processing document... Please wait.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="no-items-message hidden text-center p-4 text-gray-500" id="no-items-message">
+    No sensitive information detected.
+  </div>
+  
+  <div class="redaction-options mt-6 pt-4 border-t border-gray-100">
+    <h4 class="font-medium mb-3">Redaction Options</h4>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="form-group">
+        <label for="redaction-method" class="block text-sm text-gray-600 mb-1">Redaction Method</label>
+        <select 
+          id="redaction-method" 
+          class="w-full border border-gray-300 rounded-md px-3 py-2"
+        >
+          <option value="asterisks">Replace with asterisks (******)</option>
+          <option value="blackout">Blackout text (█████)</option>
+          <option value="replace">Replace with custom text</option>
+        </select>
+      </div>
+      
+      <div class="form-group" id="replacement-text-group">
+        <label for="replacement-text" class="block text-sm text-gray-600 mb-1">Replacement Text</label>
+        <input 
+          type="text" 
+          id="replacement-text" 
+          class="w-full border border-gray-300 rounded-md px-3 py-2" 
+          placeholder="[REDACTED]" 
+          value="[REDACTED]"
+          disabled
+        />
+      </div>
+      
+      <div class="form-group">
+        <label class="flex items-center space-x-2">
+          <input type="checkbox" id="preserve-length" class="rounded text-primary-500">
+          <span class="text-sm text-gray-700">Preserve original text length</span>
+        </label>
+      </div>
+      
+      <div class="form-group">
+        <label class="flex items-center space-x-2">
+          <input type="checkbox" id="case-sensitive" class="rounded text-primary-500">
+          <span class="text-sm text-gray-700">Case sensitive matching</span>
+        </label>
+      </div>
+      
+      <div class="form-group">
+        <label class="flex items-center space-x-2">
+          <input type="checkbox" id="whole-word" class="rounded text-primary-500" checked>
+          <span class="text-sm text-gray-700">Match whole words only</span>
+        </label>
+      </div>
+    </div>
+  </div>
+  
+  <div class="actions mt-6 flex justify-end">
+    <button 
+      id="apply-redactions-btn" 
+      class="px-6 py-2 bg-primary-500 text-white rounded-lg shadow-sm hover:bg-primary-600 transition-colors"
+      disabled
+    >
+      Apply Redactions
+    </button>
+  </div>
+</div>
+
+<script>
+  // Sensitive items list functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    const sensitiveItemsList = document.getElementById('sensitive-items-list');
+    const sensitiveItemsTbody = document.getElementById('sensitive-items-tbody');
+    const noItemsMessage = document.getElementById('no-items-message');
+    const selectAllBtn = document.getElementById('select-all-btn');
+    const deselectAllBtn = document.getElementById('deselect-all-btn');
+    const categoryFilter = document.getElementById('category-filter');
+    const redactionMethod = document.getElementById('redaction-method');
+    const replacementText = document.getElementById('replacement-text');
+    const replacementTextGroup = document.getElementById('replacement-text-group');
+    const preserveLength = document.getElementById('preserve-length');
+    const caseSensitive = document.getElementById('case-sensitive');
+    const wholeWord = document.getElementById('whole-word');
+    const applyRedactionsBtn = document.getElementById('apply-redactions-btn');
+    
+    let sensitiveItems = [];
+    
+    // Handle showing sensitive items
+    document.addEventListener('sensitive-items-detected', (event: Event) => {
+      const customEvent = event as CustomEvent;
+      sensitiveItems = customEvent.detail?.items || [];
+      
+      if (sensitiveItemsList && sensitiveItemsTbody && noItemsMessage) {
+        sensitiveItemsList.classList.remove('hidden');
+        
+        if (sensitiveItems.length === 0) {
+          sensitiveItemsTbody.innerHTML = '';
+          noItemsMessage.classList.remove('hidden');
+          
+          if (applyRedactionsBtn) {
+            applyRedactionsBtn.disabled = true;
+          }
+        } else {
+          renderSensitiveItems();
+          noItemsMessage.classList.add('hidden');
+          
+          if (applyRedactionsBtn) {
+            applyRedactionsBtn.disabled = false;
+          }
+        }
+      }
+    });
+    
+    // Render sensitive items list
+    function renderSensitiveItems() {
+      if (!sensitiveItemsTbody) return;
+      
+      const selectedCategory = categoryFilter?.value || 'all';
+      const filteredItems = selectedCategory === 'all' 
+        ? sensitiveItems 
+        : sensitiveItems.filter(item => item.category === selectedCategory);
+      
+      sensitiveItemsTbody.innerHTML = '';
+      
+      if (filteredItems.length === 0) {
+        const row = document.createElement('tr');
+        row.className = 'border-b border-gray-100';
+        row.innerHTML = `
+          <td colspan="4" class="p-4 text-center text-gray-500">
+            No items found for this category.
+          </td>
+        `;
+        sensitiveItemsTbody.appendChild(row);
+        return;
+      }
+      
+      // Add rows for each item
+      filteredItems.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.className = 'border-b border-gray-100 hover:bg-gray-50';
+        row.dataset.id = item.id;
+        
+        // Format the confidence as a percentage
+        const confidencePercent = Math.round(item.confidence * 100);
+        
+        // Get confidence level class
+        let confidenceClass = 'text-yellow-600';
+        if (confidencePercent >= 80) {
+          confidenceClass = 'text-green-600';
+        } else if (confidencePercent < 50) {
+          confidenceClass = 'text-red-600';
+        }
+        
+        row.innerHTML = `
+          <td class="p-3">
+            <input 
+              type="checkbox" 
+              class="item-checkbox rounded text-primary-500" 
+              data-id="${item.id}" 
+              ${item.selected ? 'checked' : ''}
+            >
+          </td>
+          <td class="p-3 font-medium">${item.text}</td>
+          <td class="p-3">${formatCategory(item.category)}</td>
+          <td class="p-3 ${confidenceClass}">${confidencePercent}%</td>
+        `;
+        
+        sensitiveItemsTbody.appendChild(row);
+      });
+      
+      // Add event listeners to checkboxes
+      document.querySelectorAll('.item-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', (event) => {
+          const target = event.target as HTMLInputElement;
+          const itemId = target.dataset.id;
+          
+          if (itemId) {
+            const item = sensitiveItems.find(i => i.id === itemId);
+            if (item) {
+              item.selected = target.checked;
+            }
+          }
+        });
+      });
+    }
+    
+    // Event: Select all button
+    selectAllBtn?.addEventListener('click', () => {
+      sensitiveItems.forEach(item => {
+        item.selected = true;
+      });
+      renderSensitiveItems();
+    });
+    
+    // Event: Deselect all button
+    deselectAllBtn?.addEventListener('click', () => {
+      sensitiveItems.forEach(item => {
+        item.selected = false;
+      });
+      renderSensitiveItems();
+    });
+    
+    // Event: Category filter change
+    categoryFilter?.addEventListener('change', () => {
+      renderSensitiveItems();
+    });
+    
+    // Event: Redaction method change
+    redactionMethod?.addEventListener('change', () => {
+      if (redactionMethod.value === 'replace' && replacementText && replacementTextGroup) {
+        replacementText.disabled = false;
+        replacementTextGroup.classList.remove('opacity-50');
+      } else if (replacementText && replacementTextGroup) {
+        replacementText.disabled = true;
+        replacementTextGroup.classList.add('opacity-50');
+      }
+    });
+    
+    // Event: Apply redactions button
+    applyRedactionsBtn?.addEventListener('click', () => {
+      // Get selected items
+      const selectedItems = sensitiveItems.filter(item => item.selected);
+      
+      // Get redaction options
+      const options = {
+        method: redactionMethod?.value || 'asterisks',
+        replacementText: replacementText?.value || '[REDACTED]',
+        preserveLength: preserveLength?.checked || false,
+        caseSensitive: caseSensitive?.checked || false,
+        wholeWord: wholeWord?.checked || false,
+      };
+      
+      // Dispatch event with selected items and options
+      document.dispatchEvent(new CustomEvent('apply-redactions', {
+        detail: {
+          items: selectedItems,
+          options
+        }
+      }));
+    });
+    
+    // Format category for display
+    function formatCategory(category) {
+      switch (category) {
+        case 'name': return 'Name';
+        case 'email': return 'Email';
+        case 'phone': return 'Phone';
+        case 'address': return 'Address';
+        case 'ssn': return 'SSN';
+        case 'creditcard': return 'Credit Card';
+        case 'date': return 'Date';
+        case 'organization': return 'Organization';
+        case 'financial': return 'Financial';
+        case 'medical': return 'Medical';
+        default: return 'Other';
+      }
+    }
+  });
+</script>

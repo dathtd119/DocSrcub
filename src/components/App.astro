@@ -84,7 +84,7 @@ import DocumentPreview from './redaction/DocumentPreview.astro';
           try {
             console.log("Processing document...");
             
-            // Import the necessary modules dynamically
+            // Import the necessary modules dynamically with correct JavaScript extensions
             const parserModule = await import('../core/parsers/index.js');
             const analyzerModule = await import('../core/analysis/SensitiveDataAnalyzer.js');
             

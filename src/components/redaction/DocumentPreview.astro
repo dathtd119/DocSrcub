@@ -77,25 +77,31 @@
     let currentView = 'original';
     
     // Event: Document parsed
-    document.addEventListener('document-parsed', (event: Event) => {
-      const customEvent = event as CustomEvent;
+    document.addEventListener('document-parsed', (event) => {
+      const customEvent = event;
       originalDocument = customEvent.detail?.document;
       
       if (documentPreview && originalDocument) {
+        // Store the document data as a data attribute for later use
+        documentPreview.dataset.document = JSON.stringify(originalDocument);
         documentPreview.classList.remove('hidden');
         updateDocumentMetadata(originalDocument);
         updatePreviewContent(originalDocument.content);
+        console.log("Document preview updated with parsed document data");
       }
     });
     
     // Event: Redactions applied
-    document.addEventListener('redactions-applied', (event: Event) => {
-      const customEvent = event as CustomEvent;
+    document.addEventListener('redactions-applied', (event) => {
+      const customEvent = event;
       redactedDocument = customEvent.detail?.document;
       
       if (redactedDocument) {
         currentView = 'redacted';
         updatePreviewContent(redactedDocument.content);
+        
+        // Store the redacted document for download
+        documentPreview.dataset.redactedDocument = JSON.stringify(redactedDocument);
         
         // Activate the redacted view button
         if (viewOriginalBtn && viewRedactedBtn) {
@@ -144,6 +150,8 @@
         document.dispatchEvent(new CustomEvent('download-document', {
           detail: { document: redactedDocument }
         }));
+      } else {
+        console.error("No redacted document to download!");
       }
     });
     

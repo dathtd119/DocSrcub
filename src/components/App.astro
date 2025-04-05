@@ -152,16 +152,21 @@ import DocumentPreview from './redaction/DocumentPreview.astro';
         const { redactionEngine } = redactionModule;
         
         // Get the document from previous step
-        const documentToRedact = document.querySelector('#document-preview')?.dataset.document;
+        const documentPreview = document.querySelector('#document-preview');
+        const documentToRedact = documentPreview?.dataset.document;
+        
         if (!documentToRedact) {
+          console.error("No document data found in #document-preview dataset");
           throw new Error('No document to redact');
         }
         
         // Parse the document from the data attribute
         const parsedDoc = JSON.parse(documentToRedact);
+        console.log("Retrieved document for redaction:", parsedDoc.filename);
         
         // Apply redactions using the actual redactor
         const redactedDocument = await redactionEngine.applyRedactions(parsedDoc, selectedItems, options);
+        console.log("Redaction complete for document:", redactedDocument.filename);
         
         // Dispatch event with redacted document
         document.dispatchEvent(new CustomEvent('redactions-applied', {
@@ -183,10 +188,13 @@ import DocumentPreview from './redaction/DocumentPreview.astro';
         const docToDownload = customEvent.detail?.document;
         
         if (!docToDownload) {
+          console.error("No document data found for download");
           throw new Error('No document to download');
         }
         
         console.log("Downloading document:", docToDownload.filename);
+        console.log("Document size:", docToDownload.fileSize, "bytes");
+        console.log("Document type:", docToDownload.fileType);
         
         // Create a simple text file download
         const blob = new Blob([docToDownload.content], { type: 'text/plain' });
@@ -199,10 +207,12 @@ import DocumentPreview from './redaction/DocumentPreview.astro';
         
         // Trigger download
         a.click();
+        console.log("Download initiated for:", docToDownload.filename);
         
         // Clean up
         setTimeout(() => {
           URL.revokeObjectURL(url);
+          console.log("Download URL revoked");
         }, 100);
         
       } catch (error) {

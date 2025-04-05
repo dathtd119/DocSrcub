@@ -47,9 +47,6 @@ import DocumentPreview from './redaction/DocumentPreview.astro';
 </main>
 
 <script>
-  // We need to fix the issues with imports
-  // For client-side scripts, we'll directly include the necessary functionality
-  
   document.addEventListener('DOMContentLoaded', () => {
     const stepUpload = document.getElementById('step-upload');
     const stepRedact = document.getElementById('step-redact');
@@ -82,72 +79,56 @@ import DocumentPreview from './redaction/DocumentPreview.astro';
         
         console.log("Upload complete! Processing document...");
         
-        // Simulate parsing and analysis
-        setTimeout(() => {
-          console.log("Document processed!");
-          
-          // Create some sample sensitive items for testing
-          const sampleItems = [
-            {
-              id: 'item1',
-              text: 'John Doe',
-              category: 'name',
-              positions: [{ sectionId: 'section1', start: 0, end: 8 }],
-              confidence: 0.9,
-              selected: true
-            },
-            {
-              id: 'item2',
-              text: 'johndoe@example.com',
-              category: 'email',
-              positions: [{ sectionId: 'section1', start: 10, end: 28 }],
-              confidence: 0.95,
-              selected: true
-            },
-            {
-              id: 'item3',
-              text: '123-456-7890',
-              category: 'phone',
-              positions: [{ sectionId: 'section1', start: 30, end: 42 }],
-              confidence: 0.85,
-              selected: true
+        // Actual document parsing and analysis
+        (async () => {
+          try {
+            console.log("Processing document...");
+            
+            // Import the necessary modules dynamically
+            const parserModule = await import('../core/parsers/index.js');
+            const analyzerModule = await import('../core/analysis/SensitiveDataAnalyzer.js');
+            
+            const { parserRegistry } = parserModule;
+            const { sensitiveDataAnalyzer } = analyzerModule;
+            
+            // Get appropriate parser for the file
+            const parser = parserRegistry.getParserForFile(currentFile);
+            
+            if (!parser) {
+              throw new Error(`Unsupported file type: ${currentFile.type}`);
             }
-          ];
-          
-          // Trigger the sensitive items detected event
-          document.dispatchEvent(new CustomEvent('sensitive-items-detected', {
-            detail: { items: sampleItems }
-          }));
-          
-          // Create sample parsed document
-          const sampleDocument = {
-            content: `This is a sample document with some sensitive information like John Doe, johndoe@example.com, and 123-456-7890.`,
-            metadata: {
-              wordCount: 15,
-              characterCount: 100,
-              pageCount: 1
-            },
-            sections: [
-              {
-                id: 'section1',
-                type: 'paragraph',
-                content: `This is a sample document with some sensitive information like John Doe, johndoe@example.com, and 123-456-7890.`,
-                position: { start: 0, end: 100 }
-              }
-            ],
-            filename: currentFile.name,
-            fileType: 'txt',
-            fileSize: currentFile.size
-          };
-          
-          // Trigger the document parsed event
-          document.dispatchEvent(new CustomEvent('document-parsed', {
-            detail: { document: sampleDocument }
-          }));
-          
-          // Activate the redaction step
-          activateStep(stepRedact);
-        }, 1000);
+            
+            console.log(`Using parser for ${parser.fileType}`);
+            
+            // Parse the document
+            const parsedDocument = await parser.parse(currentFile);
+            console.log("Document parsed:", parsedDocument);
+            
+            // Analyze for sensitive information
+            const sensitiveItems = sensitiveDataAnalyzer.analyze(parsedDocument);
+            console.log("Sensitive items detected:", sensitiveItems);
+            
+            // Trigger the sensitive items detected event
+            document.dispatchEvent(new CustomEvent('sensitive-items-detected', {
+              detail: { items: sensitiveItems }
+            }));
+            
+            // Trigger the document parsed event
+            document.dispatchEvent(new CustomEvent('document-parsed', {
+              detail: { document: parsedDocument }
+            }));
+            
+            console.log("Document processing complete!");
+            
+            // Activate the redaction step
+            activateStep(stepRedact);
+          } catch (error) {
+            console.error("Error in document processing:", error);
+            document.dispatchEvent(new CustomEvent('file-upload-error', {
+              detail: { error: error instanceof Error ? error.message : 'Unknown error during processing' }
+            }));
+          }
+        })();
         
       } catch (error) {
         console.error('Error processing file:', error);
@@ -158,7 +139,7 @@ import DocumentPreview from './redaction/DocumentPreview.astro';
     });
     
     // Event: Apply redactions
-    document.addEventListener('apply-redactions', (event) => {
+    document.addEventListener('apply-redactions', async (event) => {
       try {
         const customEvent = event;
         const selectedItems = customEvent.detail?.items || [];
@@ -166,26 +147,21 @@ import DocumentPreview from './redaction/DocumentPreview.astro';
         
         console.log("Applying redactions:", selectedItems, options);
         
-        // Simulate redacted document
-        const redactedDocument = {
-          content: `This is a sample document with some sensitive information like [REDACTED], [REDACTED], and [REDACTED].`,
-          metadata: {
-            wordCount: 15,
-            characterCount: 100,
-            pageCount: 1
-          },
-          sections: [
-            {
-              id: 'section1',
-              type: 'paragraph',
-              content: `This is a sample document with some sensitive information like [REDACTED], [REDACTED], and [REDACTED].`,
-              position: { start: 0, end: 100 }
-            }
-          ],
-          filename: `redacted_${currentFile.name}`,
-          fileType: 'txt',
-          fileSize: currentFile.size
-        };
+        // Import the redaction module
+        const redactionModule = await import('../core/redaction/RedactionEngine.js');
+        const { redactionEngine } = redactionModule;
+        
+        // Get the document from previous step
+        const documentToRedact = document.querySelector('#document-preview')?.dataset.document;
+        if (!documentToRedact) {
+          throw new Error('No document to redact');
+        }
+        
+        // Parse the document from the data attribute
+        const parsedDoc = JSON.parse(documentToRedact);
+        
+        // Apply redactions using the actual redactor
+        const redactedDocument = await redactionEngine.applyRedactions(parsedDoc, selectedItems, options);
         
         // Dispatch event with redacted document
         document.dispatchEvent(new CustomEvent('redactions-applied', {

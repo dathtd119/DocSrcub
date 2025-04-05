@@ -5,38 +5,39 @@
  */
 
 import * as pdfjs from 'pdfjs-dist';
-import { DocumentParser, ParsedDocument, DocumentSection, DocumentMetadata } from '../types';
-import { generateId } from '../utils';
+import { generateId } from '../utils.js';
 
 // Set the worker path (needed for pdf.js)
 const pdfjsWorker = new URL('pdfjs-dist/build/pdf.worker.min.js', import.meta.url);
 pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker.toString();
 
-export class PDFParser implements DocumentParser {
-  fileType = 'pdf' as const;
+export class PDFParser {
+  constructor() {
+    this.fileType = 'pdf';
+  }
   
   /**
    * Check if this parser supports the given file
    */
-  supports(file: File): boolean {
+  supports(file) {
     return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
   }
   
   /**
    * Parse a PDF file and extract its content
    */
-  async parse(file: File): Promise<ParsedDocument> {
+  async parse(file) {
     try {
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
       
-      const metadata: DocumentMetadata = {
+      const metadata = {
         pageCount: pdf.numPages,
         wordCount: 0,
         characterCount: 0,
       };
       
-      const sections: DocumentSection[] = [];
+      const sections = [];
       let fullText = '';
       
       // Process each page
@@ -54,7 +55,7 @@ export class PDFParser implements DocumentParser {
             const text = item.str;
             
             // If Y position changed significantly, treat as a paragraph break
-            if (lastY !== undefined && Math.abs((item as any).transform[5] - lastY) > 10) {
+            if (lastY !== undefined && Math.abs(item.transform[5] - lastY) > 10) {
               // Create a section for previous paragraph
               if (pageText.trim()) {
                 const startPos = fullText.length;
@@ -70,9 +71,9 @@ export class PDFParser implements DocumentParser {
                   },
                 });
                 
-                fullText += sectionText + '\\n';
-                metadata.wordCount! += sectionText.split(/\\s+/).filter(Boolean).length;
-                metadata.characterCount! += sectionText.length;
+                fullText += sectionText + '\n';
+                metadata.wordCount += sectionText.split(/\s+/).filter(Boolean).length;
+                metadata.characterCount += sectionText.length;
               }
               
               pageText = text;
@@ -84,7 +85,7 @@ export class PDFParser implements DocumentParser {
               pageText += text;
             }
             
-            lastY = (item as any).transform[5];
+            lastY = item.transform[5];
           }
         }
         
@@ -103,9 +104,9 @@ export class PDFParser implements DocumentParser {
             },
           });
           
-          fullText += sectionText + '\\n';
-          metadata.wordCount! += sectionText.split(/\\s+/).filter(Boolean).length;
-          metadata.characterCount! += sectionText.length;
+          fullText += sectionText + '\n';
+          metadata.wordCount += sectionText.split(/\s+/).filter(Boolean).length;
+          metadata.characterCount += sectionText.length;
         }
       }
       
@@ -141,7 +142,7 @@ export class PDFParser implements DocumentParser {
   /**
    * Parse PDF metadata date format
    */
-  private parseMetadataDate(dateString: string): string | undefined {
+  parseMetadataDate(dateString) {
     try {
       // Handle PDF date format (D:20230428120000Z)
       if (dateString.startsWith('D:')) {

@@ -6,18 +6,27 @@
 
 import { parserRegistry } from './ParserRegistry.js';
 import { txtParser } from './TXTParser.js';
+import { pdfParser } from './PDFParser.js';
+import { docxParser } from './DOCXParser.js';
+import { csvParser } from './CSVParser.js';
+import { xlsxParser } from './XLSXParser.js';
 
-// For now, let's just register the TXT parser to get things working
+// Register all parsers
 parserRegistry.register(txtParser);
-
-// As we convert more parsers, we'll add them here
-// parserRegistry.register(pdfParser);
-// parserRegistry.register(docxParser);
-// parserRegistry.register(csvParser);
-// parserRegistry.register(xlsxParser);
+parserRegistry.register(pdfParser);
+parserRegistry.register(docxParser);
+parserRegistry.register(csvParser);
+parserRegistry.register(xlsxParser);
 
 // Export the registry and individual parsers
-export { parserRegistry, txtParser };
+export { 
+  parserRegistry,
+  txtParser,
+  pdfParser,
+  docxParser,
+  csvParser,
+  xlsxParser
+};
 
 // Default export for convenience
 export default parserRegistry;

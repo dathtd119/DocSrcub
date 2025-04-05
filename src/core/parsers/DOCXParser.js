@@ -5,16 +5,17 @@
  */
 
 import mammoth from 'mammoth';
-import { DocumentParser, ParsedDocument, DocumentSection, DocumentMetadata } from '../types';
-import { generateId } from '../utils';
+import { generateId } from '../utils.js';
 
-export class DOCXParser implements DocumentParser {
-  fileType = 'docx' as const;
+export class DOCXParser {
+  constructor() {
+    this.fileType = 'docx';
+  }
   
   /**
    * Check if this parser supports the given file
    */
-  supports(file: File): boolean {
+  supports(file) {
     return file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
            file.name.toLowerCase().endsWith('.docx') ||
            file.type === 'application/msword' ||
@@ -24,7 +25,7 @@ export class DOCXParser implements DocumentParser {
   /**
    * Parse a DOCX file and extract its content
    */
-  async parse(file: File): Promise<ParsedDocument> {
+  async parse(file) {
     try {
       const arrayBuffer = await file.arrayBuffer();
       
@@ -37,13 +38,13 @@ export class DOCXParser implements DocumentParser {
       tempDiv.innerHTML = html;
       
       // Initialize metadata
-      const metadata: DocumentMetadata = {
+      const metadata = {
         wordCount: 0,
         characterCount: 0,
       };
       
       // Process sections
-      const sections: DocumentSection[] = [];
+      const sections = [];
       let fullText = '';
       
       // Process paragraphs
@@ -54,7 +55,7 @@ export class DOCXParser implements DocumentParser {
           const startPos = fullText.length;
           const sectionText = text.trim();
           
-          let type: DocumentSection['type'] = 'paragraph';
+          let type = 'paragraph';
           if (para.tagName.toLowerCase().startsWith('h')) {
             type = 'heading';
           } else if (para.tagName.toLowerCase() === 'ul' || para.tagName.toLowerCase() === 'ol') {
@@ -74,8 +75,8 @@ export class DOCXParser implements DocumentParser {
           });
           
           fullText += sectionText + '\n';
-          metadata.wordCount! += sectionText.split(/\\s+/).filter(Boolean).length;
-          metadata.characterCount! += sectionText.length;
+          metadata.wordCount += sectionText.split(/\s+/).filter(Boolean).length;
+          metadata.characterCount += sectionText.length;
         }
       });
       

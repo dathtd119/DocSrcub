@@ -5,16 +5,17 @@
  */
 
 import * as XLSX from 'xlsx';
-import { DocumentParser, ParsedDocument, DocumentSection, DocumentMetadata } from '../types';
-import { generateId } from '../utils';
+import { generateId } from '../utils.js';
 
-export class XLSXParser implements DocumentParser {
-  fileType = 'xlsx' as const;
+export class XLSXParser {
+  constructor() {
+    this.fileType = 'xlsx';
+  }
   
   /**
    * Check if this parser supports the given file
    */
-  supports(file: File): boolean {
+  supports(file) {
     return file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
            file.name.toLowerCase().endsWith('.xlsx') ||
            file.type === 'application/vnd.ms-excel' ||
@@ -24,7 +25,7 @@ export class XLSXParser implements DocumentParser {
   /**
    * Parse an Excel file and extract its content
    */
-  async parse(file: File): Promise<ParsedDocument> {
+  async parse(file) {
     try {
       const arrayBuffer = await file.arrayBuffer();
       
@@ -32,13 +33,13 @@ export class XLSXParser implements DocumentParser {
       const workbook = XLSX.read(arrayBuffer, { type: 'array' });
       
       // Initialize metadata
-      const metadata: DocumentMetadata = {
+      const metadata = {
         wordCount: 0,
         characterCount: 0,
       };
       
       // Process sections (each sheet as a section)
-      const sections: DocumentSection[] = [];
+      const sections = [];
       let fullText = '';
       
       // Process each sheet
@@ -65,9 +66,9 @@ export class XLSXParser implements DocumentParser {
           },
         });
         
-        fullText += sheetHeading + '\\n';
-        metadata.wordCount! += sheetHeading.split(/\\s+/).filter(Boolean).length;
-        metadata.characterCount! += sheetHeading.length;
+        fullText += sheetHeading + '\n';
+        metadata.wordCount += sheetHeading.split(/\s+/).filter(Boolean).length;
+        metadata.characterCount += sheetHeading.length;
         
         // Process rows
         for (const row of sheetData) {
@@ -79,7 +80,7 @@ export class XLSXParser implements DocumentParser {
             if (cell === null || cell === undefined) return '';
             if (typeof cell === 'object' && cell instanceof Date) return cell.toLocaleString();
             return String(cell);
-          }).join('\\t');
+          }).join('\t');
           
           if (rowText.trim()) {
             const startPos = fullText.length;
@@ -94,14 +95,14 @@ export class XLSXParser implements DocumentParser {
               },
             });
             
-            fullText += rowText + '\\n';
-            metadata.wordCount! += rowText.split(/\\s+/).filter(Boolean).length;
-            metadata.characterCount! += rowText.length;
+            fullText += rowText + '\n';
+            metadata.wordCount += rowText.split(/\s+/).filter(Boolean).length;
+            metadata.characterCount += rowText.length;
           }
         }
         
         // Add a blank line between sheets
-        fullText += '\\n';
+        fullText += '\n';
       }
       
       return {

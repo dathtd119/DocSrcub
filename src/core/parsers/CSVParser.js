@@ -4,16 +4,17 @@
  * Handles parsing of CSV files
  */
 
-import { DocumentParser, ParsedDocument, DocumentSection, DocumentMetadata } from '../types';
-import { generateId } from '../utils';
+import { generateId } from '../utils.js';
 
-export class CSVParser implements DocumentParser {
-  fileType = 'csv' as const;
+export class CSVParser {
+  constructor() {
+    this.fileType = 'csv';
+  }
   
   /**
    * Check if this parser supports the given file
    */
-  supports(file: File): boolean {
+  supports(file) {
     return file.type === 'text/csv' || 
            file.name.toLowerCase().endsWith('.csv');
   }
@@ -21,12 +22,12 @@ export class CSVParser implements DocumentParser {
   /**
    * Parse a CSV file and extract its content
    */
-  async parse(file: File): Promise<ParsedDocument> {
+  async parse(file) {
     try {
       const text = await file.text();
       
       // Simple CSV parsing (more robust parsing would use a library like PapaParse)
-      const lines = text.split(/\\r?\\n/).filter(line => line.trim());
+      const lines = text.split(/\r?\n/).filter(line => line.trim());
       
       // Extract header (first line)
       const header = this.parseCSVLine(lines[0]);
@@ -35,13 +36,13 @@ export class CSVParser implements DocumentParser {
       const rows = lines.slice(1).map(line => this.parseCSVLine(line));
       
       // Initialize metadata
-      const metadata: DocumentMetadata = {
+      const metadata = {
         wordCount: 0,
         characterCount: text.length,
       };
       
       // Process sections (each row as a section)
-      const sections: DocumentSection[] = [];
+      const sections = [];
       let fullText = '';
       
       // Add header as first section
@@ -56,8 +57,8 @@ export class CSVParser implements DocumentParser {
         },
       });
       
-      fullText += headerText + '\\n';
-      metadata.wordCount! += headerText.split(/\\s+/).filter(Boolean).length;
+      fullText += headerText + '\n';
+      metadata.wordCount += headerText.split(/\s+/).filter(Boolean).length;
       
       // Add each row as a section
       for (const row of rows) {
@@ -75,8 +76,8 @@ export class CSVParser implements DocumentParser {
             },
           });
           
-          fullText += rowText + '\\n';
-          metadata.wordCount! += rowText.split(/\\s+/).filter(Boolean).length;
+          fullText += rowText + '\n';
+          metadata.wordCount += rowText.split(/\s+/).filter(Boolean).length;
         }
       }
       
@@ -98,7 +99,7 @@ export class CSVParser implements DocumentParser {
    * Parse a CSV line into an array of values
    * This is a simplified CSV parser that doesn't handle all edge cases
    */
-  private parseCSVLine(line: string): string[] {
+  parseCSVLine(line) {
     const result = [];
     let current = '';
     let inQuotes = false;

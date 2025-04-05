@@ -204,24 +204,30 @@ import DocumentPreview from './redaction/DocumentPreview.astro';
     document.addEventListener('download-document', async (event) => {
       try {
         const customEvent = event;
-        const document = customEvent.detail?.document;
+        const docToDownload = customEvent.detail?.document;
         
-        if (!document) {
+        if (!docToDownload) {
           throw new Error('No document to download');
         }
         
-        console.log("Downloading document:", document.filename);
+        console.log("Downloading document:", docToDownload.filename);
         
         // Create a simple text file download
-        const blob = new Blob([document.content], { type: 'text/plain' });
+        const blob = new Blob([docToDownload.content], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
+        
+        // Create download link
         const a = document.createElement('a');
         a.href = url;
-        a.download = document.filename;
-        document.body.appendChild(a);
+        a.download = docToDownload.filename;
+        
+        // Trigger download
         a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        
+        // Clean up
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+        }, 100);
         
       } catch (error) {
         console.error('Error downloading document:', error);

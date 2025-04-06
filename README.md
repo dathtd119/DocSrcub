@@ -42,7 +42,7 @@ A privacy-first document redaction tool that operates entirely in the browser. D
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/docscrub.git
+   git clone https://github.com/dathtd119/docscrub.git
    cd docscrub
    ```
 
@@ -76,7 +76,7 @@ pnpm preview
 
 ### Using Pre-built Docker Image
 
-The easiest way to run DocScrub is using our official Docker image:
+The easiest way to run DocScrub is using our official Docker image from [DockerHub](https://hub.docker.com/r/dathtd119/docscrub):
 
 ```bash
 docker pull dathtd119/docscrub:latest
@@ -87,10 +87,24 @@ Access the application at [http://localhost:8080](http://localhost:8080)
 
 ### Using Docker Compose
 
-1. Download the docker-compose.yml file:
-   ```bash
-   curl -O https://raw.githubusercontent.com/dathtd119/docscrub/main/docker-compose.yml
-   ```
+You can quickly deploy DocScrub using Docker Compose with the following example:
+
+1. Create a file named `docker-compose.yml` with the following content:
+
+```yaml
+version: '3.8'
+
+services:
+  docscrub:
+    image: dathtd119/docscrub:latest
+    container_name: docscrub-app
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    # If you need environment variables, add them here
+    # environment:
+    #   - NODE_ENV=production
+```
 
 2. Run Docker Compose:
    ```bash
@@ -142,8 +156,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 🔄 Recent Updates
 
+- **DockerHub Available**: Official image now available on [DockerHub](https://hub.docker.com/r/dathtd119/docscrub)
 - **Docker Support**: Added Dockerfile and docker-compose.yml for easy deployment
-- **DockerHub Image**: Published official Docker image on DockerHub
 - **Enhanced File Format Support**: Added support for additional file formats like PPTX, ODT, ODP, and ODS using the officeparser library
 - **Real Data Processing**: Replaced sample data with actual document processing and sensitive information detection
 - **End-to-End Integration**: Integrated document parsing, analysis, and redaction engines

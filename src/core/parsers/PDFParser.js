@@ -5,8 +5,24 @@
  */
 
 // Import pdfjs using the webpack approach which automatically configures the worker
-import * as pdfjsLib from 'pdfjs-dist/webpack.mjs';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { generateId } from '../utils.js';
+
+// Configure worker source only on the client-side using an IIAFE
+(async () => {
+  if (!import.meta.env.SSR) {
+    try {
+      // Import the worker path using Vite's ?url feature
+      const workerSrcModule = await import('pdfjs-dist/legacy/build/pdf.worker.mjs?url');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrcModule.default;
+      console.log('PDF.js workerSrc set:', pdfjsLib.GlobalWorkerOptions.workerSrc);
+    } catch (e) {
+      console.error("Failed to set PDF.js workerSrc dynamically:", e);
+      // Potential fallback: Manually copy pdf.worker.mjs to public/ and set:
+      // pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
+    }
+  }
+})(); // Immediately invoke the async function
 
 export class PDFParser {
   constructor() {

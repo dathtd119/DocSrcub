@@ -57,8 +57,8 @@ import DocumentPreview from './redaction/DocumentPreview.astro';
     // Event: File selected
     document.addEventListener('file-selected', async (event) => {
       try {
-        const customEvent = event;
-        currentFile = customEvent.detail?.file;
+        const customEvent = event as CustomEvent; // Cast to CustomEvent
+        currentFile = customEvent.detail?.file as File | null; // Access detail and type file
         
         if (!currentFile) {
           throw new Error('No file selected');
@@ -133,7 +133,8 @@ import DocumentPreview from './redaction/DocumentPreview.astro';
       } catch (error) {
         console.error('Error processing file:', error);
         document.dispatchEvent(new CustomEvent('file-upload-error', {
-          detail: { error: error.message }
+          // Check if error is an Error instance before accessing message
+          detail: { error: error instanceof Error ? error.message : String(error) }
         }));
       }
     });
@@ -141,7 +142,7 @@ import DocumentPreview from './redaction/DocumentPreview.astro';
     // Event: Apply redactions
     document.addEventListener('apply-redactions', async (event) => {
       try {
-        const customEvent = event;
+        const customEvent = event as CustomEvent; // Cast to CustomEvent
         const selectedItems = customEvent.detail?.items || [];
         const options = customEvent.detail?.options || {};
         
@@ -153,7 +154,8 @@ import DocumentPreview from './redaction/DocumentPreview.astro';
         
         // Get the document from previous step
         const documentPreview = document.querySelector('#document-preview');
-        const documentToRedact = documentPreview?.dataset.document;
+        // Cast documentPreview to HTMLElement to access dataset
+        const documentToRedact = (documentPreview as HTMLElement | null)?.dataset.document;
         
         if (!documentToRedact) {
           console.error("No document data found in #document-preview dataset");
@@ -177,14 +179,15 @@ import DocumentPreview from './redaction/DocumentPreview.astro';
         activateStep(stepPreview);
       } catch (error) {
         console.error('Error applying redactions:', error);
-        alert(`Error applying redactions: ${error.message}`);
+        // Check if error is an Error instance before accessing message
+        alert(`Error applying redactions: ${error instanceof Error ? error.message : String(error)}`);
       }
     });
     
     // Event: Download document
     document.addEventListener('download-document', async (event) => {
       try {
-        const customEvent = event;
+        const customEvent = event as CustomEvent; // Cast to CustomEvent
         const docToDownload = customEvent.detail?.document;
         
         if (!docToDownload) {
@@ -197,7 +200,7 @@ import DocumentPreview from './redaction/DocumentPreview.astro';
         console.log("Document type:", docToDownload.fileType);
         
         // Create a simple text file download
-        const blob = new Blob([docToDownload.content], { type: 'text/plain' });
+        const blob = new Blob([docToDownload.content], { type: docToDownload.fileType || 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
         
         // Create download link
@@ -217,7 +220,8 @@ import DocumentPreview from './redaction/DocumentPreview.astro';
         
       } catch (error) {
         console.error('Error downloading document:', error);
-        alert(`Error downloading document: ${error.message}`);
+        // Check if error is an Error instance before accessing message
+        alert(`Error downloading document: ${error instanceof Error ? error.message : String(error)}`);
       }
     });
     
@@ -250,7 +254,8 @@ import DocumentPreview from './redaction/DocumentPreview.astro';
     }
     
     // Activate a step in the UI
-    function activateStep(stepElement) {
+    // Add type annotation for stepElement
+    function activateStep(stepElement: HTMLElement | null) {
       if (!stepElement) return;
       
       stepElement.classList.remove('opacity-50', 'pointer-events-none');

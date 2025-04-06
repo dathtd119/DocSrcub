@@ -49,10 +49,18 @@
     </div>
   </div>
   
-  <div class="actions text-center mb-8">
-    <button 
-      id="download-btn" 
-      class="px-8 py-3 bg-primary-500 text-white rounded-lg shadow-md hover:bg-primary-600 transition-colors"
+  <div class="actions text-center mb-8 flex justify-center space-x-4">
+    <button
+      id="copy-btn"
+      class="px-8 py-3 bg-secondary-500 text-white rounded-lg shadow-md hover:bg-secondary-600 transition-colors"
+    >
+      Copy Redacted Content
+    </button>
+    <button
+      id="download-btn"
+      class="px-8 py-3 bg-primary-500 text-white rounded-lg shadow-md opacity-50 cursor-not-allowed"
+      disabled
+      title="feature coming soon gang 🥀🥀🥀"
     >
       Download Redacted Document
     </button>
@@ -71,14 +79,15 @@
     const docWordcount = document.getElementById('doc-wordcount');
     const docPagecount = document.getElementById('doc-pagecount');
     const downloadBtn = document.getElementById('download-btn');
+    const copyBtn = document.getElementById('copy-btn'); // Get reference to copy button
     
-    let originalDocument = null;
-    let redactedDocument = null;
+    let originalDocument: any = null; // Add types
+    let redactedDocument: any = null; // Add types
     let currentView = 'original';
     
     // Event: Document parsed
     document.addEventListener('document-parsed', (event) => {
-      const customEvent = event;
+      const customEvent = event as CustomEvent; // Cast event
       originalDocument = customEvent.detail?.document;
       
       if (documentPreview && originalDocument) {
@@ -93,7 +102,7 @@
     
     // Event: Redactions applied
     document.addEventListener('redactions-applied', (event) => {
-      const customEvent = event;
+      const customEvent = event as CustomEvent; // Cast event
       redactedDocument = customEvent.detail?.document;
       
       if (redactedDocument) {
@@ -101,7 +110,10 @@
         updatePreviewContent(redactedDocument.content);
         
         // Store the redacted document for download
-        documentPreview.dataset.redactedDocument = JSON.stringify(redactedDocument);
+        // Add null check for documentPreview before accessing dataset
+        if (documentPreview) {
+          documentPreview.dataset.redactedDocument = JSON.stringify(redactedDocument);
+        }
         
         // Activate the redacted view button
         if (viewOriginalBtn && viewRedactedBtn) {
@@ -144,45 +156,65 @@
       }
     });
     
-    // Event: Download button
-    downloadBtn?.addEventListener('click', () => {
-      if (redactedDocument) {
-        document.dispatchEvent(new CustomEvent('download-document', {
-          detail: { document: redactedDocument }
-        }));
+    // Event listener for download button removed as it's disabled
+    // Event: Copy button
+    copyBtn?.addEventListener('click', async () => {
+      if (redactedDocument?.content) {
+        try {
+          await navigator.clipboard.writeText(redactedDocument.content);
+          // Provide feedback
+          // Cast copyBtn to HTMLButtonElement to access disabled property
+          const button = copyBtn as HTMLButtonElement | null;
+          if (button) {
+            const originalText = button.textContent;
+            button.textContent = 'Copied!';
+            button.disabled = true;
+            setTimeout(() => {
+              // Check button still exists before modifying
+              if (button) {
+                 button.textContent = originalText;
+                 button.disabled = false;
+              }
+            }, 1500); // Reset after 1.5 seconds
+          }
+        } catch (err) { // Correctly placed catch block
+          console.error('Failed to copy text: ', err);
+          alert('Failed to copy content to clipboard.');
+        }
       } else {
-        console.error("No redacted document to download!");
+        console.error("No redacted content to copy!");
+        alert('No redacted content available to copy.');
       }
-    });
+    }); // End of copyBtn listener
     
+    // --- Helper functions defined within DOMContentLoaded scope ---
+
     // Update document metadata display
-    function updateDocumentMetadata(document) {
+    function updateDocumentMetadata(document: any) {
       if (docFilename) {
         docFilename.textContent = document.filename;
       }
-      
       if (docFilesize) {
         docFilesize.textContent = formatFileSize(document.fileSize);
       }
-      
       if (docWordcount && document.metadata.wordCount !== undefined) {
         docWordcount.textContent = document.metadata.wordCount.toString();
       }
-      
       if (docPagecount && document.metadata.pageCount !== undefined) {
         docPagecount.textContent = document.metadata.pageCount.toString();
       }
     }
-    
+
     // Update preview content
-    function updatePreviewContent(content) {
+    function updatePreviewContent(content: string) {
       if (previewContent) {
         previewContent.textContent = content;
       }
     }
-    
+
     // Format file size for display
-    function formatFileSize(bytes) {
+    function formatFileSize(bytes: number): string {
+      if (bytes === null || bytes === undefined) return 'N/A'; // Handle null/undefined bytes
       if (bytes < 1024) {
         return bytes + ' bytes';
       } else if (bytes < 1024 * 1024) {
@@ -193,5 +225,5 @@
         return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
       }
     }
-  });
+  }); // End of DOMContentLoaded listener
 </script>

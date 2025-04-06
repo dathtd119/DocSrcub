@@ -14,7 +14,7 @@ A privacy-first document redaction tool that operates entirely in the browser. D
 ## ✨ Key Features
 
 - **Intelligent Detection**: Automatically identifies potential sensitive information like names, emails, phone numbers, addresses, etc.
-- **Multiple File Formats**: Supports PDF, DOCX, TXT, CSV, XLSX, and more
+- **Multiple File Formats**: Supports PDF, DOCX, PPTX, XLSX, ODT, ODP, ODS, TXT, CSV, and more
 - **Customizable Redaction**: Choose what to redact and how to redact it (asterisks, blackout, or custom replacement text)
 - **Interactive Preview**: See the original and redacted versions side-by-side
 - **Easy Download**: Get your redacted document with a single click
@@ -24,6 +24,7 @@ A privacy-first document redaction tool that operates entirely in the browser. D
 - **[Astro.js](https://astro.build/)**: Framework for building fast, content-focused websites
 - **[Tailwind CSS](https://tailwindcss.com/)**: Utility-first CSS framework
 - **Document Processing Libraries**:
+  - [officeparser](https://www.npmjs.com/package/officeparser): Multi-format document parser for docx, pptx, xlsx, odt, odp, ods, pdf
   - PDF.js: For parsing PDF files
   - Mammoth.js: For parsing DOCX files
   - SheetJS: For parsing Excel files
@@ -41,7 +42,7 @@ A privacy-first document redaction tool that operates entirely in the browser. D
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/docscrub.git
+   git clone https://github.com/dathtd119/docscrub.git
    cd docscrub
    ```
 
@@ -75,21 +76,35 @@ pnpm preview
 
 ### Using Pre-built Docker Image
 
-The easiest way to run DocScrub is using our official Docker image:
+The easiest way to run DocScrub is using our official Docker image from [DockerHub](https://hub.docker.com/r/dathtd119/docscrub):
 
 ```bash
-docker pull yourusername/docscrub:latest
-docker run -p 8080:80 yourusername/docscrub:latest
+docker pull dathtd119/docscrub:latest
+docker run -p 8080:80 dathtd119/docscrub:latest
 ```
 
 Access the application at [http://localhost:8080](http://localhost:8080)
 
 ### Using Docker Compose
 
-1. Download the docker-compose.yml file:
-   ```bash
-   curl -O https://raw.githubusercontent.com/yourusername/docscrub/main/docker-compose.yml
-   ```
+You can quickly deploy DocScrub using Docker Compose with the following example:
+
+1. Create a file named `docker-compose.yml` with the following content:
+
+```yaml
+version: '3.8'
+
+services:
+  docscrub:
+    image: dathtd119/docscrub:latest
+    container_name: docscrub-app
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    # If you need environment variables, add them here
+    # environment:
+    #   - NODE_ENV=production
+```
 
 2. Run Docker Compose:
    ```bash
@@ -104,7 +119,7 @@ If you prefer to build the Docker image yourself:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/docscrub.git
+   git clone https://github.com/dathtd119/docscrub.git
    cd docscrub
    ```
 
@@ -141,16 +156,20 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 🔄 Recent Updates
 
+- **DockerHub Available**: Official image now available on [DockerHub](https://hub.docker.com/r/dathtd119/docscrub)
 - **Docker Support**: Added Dockerfile and docker-compose.yml for easy deployment
-- **DockerHub Image**: Published official Docker image on DockerHub
+- **Enhanced File Format Support**: Added support for additional file formats like PPTX, ODT, ODP, and ODS using the officeparser library
 - **Real Data Processing**: Replaced sample data with actual document processing and sensitive information detection
 - **End-to-End Integration**: Integrated document parsing, analysis, and redaction engines
 - **Improved Error Handling**: Added more robust error handling for document processing
 
 ## 🔮 Future Enhancements
 
-- Additional file format support (PPTX, HTML, etc.)
 - Enhanced detection of sensitive information through machine learning
 - Support for batch processing multiple files
 - Advanced redaction options (partial redaction, regex patterns, etc.)
 - Improved accessibility features
+
+## 🙏 Acknowledgments
+
+- [officeparser](https://www.npmjs.com/package/officeparser) - A comprehensive library for parsing various office document formats

@@ -74,23 +74,47 @@ pnpm preview
 
 ## 🐳 Docker Deployment
 
+### Using Pre-built Docker Image
+
+The easiest way to run DocScrub is using our official Docker image:
+
+```bash
+docker pull dathtd119/docscrub:latest
+docker run -p 8080:80 dathtd119/docscrub:latest
+```
+
+Access the application at [http://localhost:8080](http://localhost:8080)
+
 ### Using Docker Compose
 
-1. Build and start the container:
+1. Download the docker-compose.yml file:
+   ```bash
+   curl -O https://raw.githubusercontent.com/dathtd119/docscrub/main/docker-compose.yml
+   ```
+
+2. Run Docker Compose:
    ```bash
    docker-compose up -d
    ```
 
-2. Access the application at [http://localhost:8080](http://localhost:8080)
+3. Access the application at [http://localhost:8080](http://localhost:8080)
 
-### Using Docker Directly
+### Building Locally
 
-1. Build the Docker image:
+If you prefer to build the Docker image yourself:
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/dathtd119/docscrub.git
+   cd docscrub
+   ```
+
+2. Build the Docker image:
    ```bash
    docker build -t docscrub .
    ```
 
-2. Run the container:
+3. Run the container:
    ```bash
    docker run -p 8080:80 docscrub
    ```
@@ -118,6 +142,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 🔄 Recent Updates
 
+- **Docker Support**: Added Dockerfile and docker-compose.yml for easy deployment
+- **DockerHub Image**: Published official Docker image on DockerHub
 - **Enhanced File Format Support**: Added support for additional file formats like PPTX, ODT, ODP, and ODS using the officeparser library
 - **Real Data Processing**: Replaced sample data with actual document processing and sensitive information detection
 - **End-to-End Integration**: Integrated document parsing, analysis, and redaction engines

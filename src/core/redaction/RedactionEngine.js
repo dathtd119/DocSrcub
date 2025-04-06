@@ -23,27 +23,14 @@ export class RedactionEngine {
       sections: [...document.sections.map(section => ({ ...section }))],
     };
 
-    // Group items by type: custom items and regular items
-    const customItems = itemsToRedact.filter(item => item.isCustom);
-    const regularItems = itemsToRedact.filter(item => !item.isCustom);
-    
-    console.log(`Processing ${regularItems.length} regular items and ${customItems.length} custom items`);
-
-    // Apply redactions for regular items that have positions
+    // Apply redactions to each section
     for (const section of redactedDocument.sections) {
-      const sectionItems = regularItems.filter(item => 
+      const sectionItems = itemsToRedact.filter(item => 
         item.positions.some(pos => pos.sectionId === section.id)
       );
       
       if (sectionItems.length > 0) {
         section.content = this.redactText(section.content, sectionItems, options);
-      }
-    }
-
-    // Apply redactions for custom items to all sections (global search)
-    if (customItems.length > 0) {
-      for (const section of redactedDocument.sections) {
-        section.content = this.redactCustomText(section.content, customItems, options);
       }
     }
 
@@ -56,7 +43,7 @@ export class RedactionEngine {
   }
 
   /**
-   * Apply redactions to a specific text string (for regular items)
+   * Apply redactions to a specific text string
    */
   redactText(text, itemsToRedact, options) {
     let redactedText = text;
@@ -67,26 +54,6 @@ export class RedactionEngine {
       const pattern = this.buildSearchPattern(item.text, { caseSensitive, wholeWord });
       const replacement = this.buildReplacement(item.text, method, replacementText, preserveLength);
       
-      redactedText = redactedText.replace(pattern, replacement);
-    }
-    
-    return redactedText;
-  }
-  
-  /**
-   * Apply redactions for custom text items (global search)
-   */
-  redactCustomText(text, customItems, options) {
-    let redactedText = text;
-    
-    for (const item of customItems) {
-      const { caseSensitive, wholeWord, method, replacementText, preserveLength } = options;
-      
-      // For custom items, we search the text directly
-      const pattern = this.buildSearchPattern(item.text, { caseSensitive, wholeWord });
-      const replacement = this.buildReplacement(item.text, method, replacementText, preserveLength);
-      
-      console.log(`Redacting custom text: ${item.text}`);
       redactedText = redactedText.replace(pattern, replacement);
     }
     

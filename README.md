@@ -2,7 +2,7 @@
 
 A privacy-first document redaction tool that operates entirely in the browser. DocScrub lets you securely redact sensitive information from documents without uploading them to any server.
 
-![DocScrub Screenshot](./public/screenshot.png)
+![DocScrub Screenshot](./public/screenshot-0.png)
 
 ## 🔒 Privacy Features
 

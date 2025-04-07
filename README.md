@@ -4,6 +4,13 @@ A privacy-first document redaction tool that operates entirely in the browser. D
 
 ![DocScrub Screenshot](./public/screenshot-0.png)
 
+## 📱 Live Demo
+
+You can access the live version of DocScrub on GitHub Pages:
+[Live Github Page](https://dathtd119.github.io/DocSrcub)
+
+
+
 ## 🔒 Privacy Features
 
 - **Client-side Processing**: All document parsing and redaction happens in your browser
@@ -30,11 +37,6 @@ A privacy-first document redaction tool that operates entirely in the browser. D
   - SheetJS: For parsing Excel files
 - **Modern JavaScript**: Leveraging the latest ES features
 - **Docker**: For easy deployment and containerization
-
-## 📱 Live Demo
-
-You can access the live version of DocScrub on GitHub Pages:
-[Live Github Page](https://dathtd119.github.io/DocSrcub)
 
 ## 🛠️ Development
 

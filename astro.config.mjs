@@ -5,7 +5,10 @@ import tailwind from '@astrojs/tailwind';
 // https://astro.build/config
 export default defineConfig({
   integrations: [tailwind()],
-  site: 'https://docscrub.app',
+  // Update site URL to your GitHub Pages URL (replace YOUR_USERNAME with your GitHub username)
+  site: 'https://YOUR_USERNAME.github.io',
+  // Add your repository name as the base
+  base: '/DocSrcub',
   output: 'static', // Ensuring static output for client-side processing
   build: {
     assets: 'assets',

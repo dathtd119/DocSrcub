@@ -31,6 +31,11 @@ A privacy-first document redaction tool that operates entirely in the browser. D
 - **Modern JavaScript**: Leveraging the latest ES features
 - **Docker**: For easy deployment and containerization
 
+## 📱 Live Demo
+
+You can access the live version of DocScrub on GitHub Pages:
+[https://YOUR_USERNAME.github.io/DocSrcub](https://YOUR_USERNAME.github.io/DocSrcub)
+
 ## 🛠️ Development
 
 ### Prerequisites
@@ -156,6 +161,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 🔄 Recent Updates
 
+- **GitHub Pages Available**: DocScrub is now accessible online via GitHub Pages
+- **Automated Deployment**: Added GitHub Actions workflow for automatic deployment
 - **DockerHub Available**: Official image now available on [DockerHub](https://hub.docker.com/r/dathtd119/docscrub)
 - **Docker Support**: Added Dockerfile and docker-compose.yml for easy deployment
 - **Enhanced File Format Support**: Added support for additional file formats like PPTX, ODT, ODP, and ODS using the officeparser library

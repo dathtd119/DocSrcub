@@ -2,6 +2,7 @@
 import Header from '../components/ui/Header.astro';
 import Footer from '../components/ui/Footer.astro';
 import '../styles/global.css';
+import { getPath } from '../utils/path.js';
 
 interface Props {
   title?: string;
@@ -19,7 +20,7 @@ const {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href={getPath('/favicon.svg')} />
     <meta name="generator" content={Astro.generator} />
     
     <!-- Primary Meta Tags -->
@@ -29,13 +30,13 @@ const {
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://docscrub.app/" />
+    <meta property="og:url" content={import.meta.env.SITE} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://docscrub.app/" />
+    <meta property="twitter:url" content={import.meta.env.SITE} />
     <meta property="twitter:title" content={title} />
     <meta property="twitter:description" content={description} />
     

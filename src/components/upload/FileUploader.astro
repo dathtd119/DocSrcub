@@ -54,6 +54,24 @@ const supportedFormats = parserRegistry.getSupportedFileTypes();
       Browse Files
     </button>
   </div>
+
+  <div class="separator my-6 text-center text-gray-500">OR</div>
+
+  <div id="paste-zone" class="paste-zone bg-white border border-gray-200 rounded-xl p-6">
+    <h3 class="text-lg font-semibold mb-3">Paste Your Text Content</h3>
+    <textarea
+      id="text-input"
+      rows="6"
+      class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+      placeholder="Paste your text here..."
+    ></textarea>
+    <button
+      id="process-text-button"
+      class="mt-4 px-6 py-2 bg-secondary-500 text-white rounded-lg shadow-sm hover:bg-secondary-600 transition-colors"
+    >
+      Process Pasted Text
+    </button>
+  </div>
   
   <div id="upload-progress" class="upload-progress hidden mt-6">
     <div class="flex justify-between text-sm mb-1">
@@ -62,16 +80,16 @@ const supportedFormats = parserRegistry.getSupportedFileTypes();
     </div>
     
     <div class="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-      <div 
-        id="progress-bar" 
-        class="h-full bg-primary-500 transition-all duration-300 ease-out" 
+      <div
+        id="progress-bar"
+        class="h-full bg-primary-500 transition-all duration-300 ease-out"
         style="width: 0%"
       ></div>
     </div>
   </div>
   
   <div id="error-message" class="error-message hidden mt-4 p-3 bg-red-100 text-red-800 rounded-lg">
-    <p>Error uploading file: <span id="error-text"></span></p>
+    <p>Error processing input: <span id="error-text"></span></p>
   </div>
 </div>
 
@@ -87,6 +105,8 @@ const supportedFormats = parserRegistry.getSupportedFileTypes();
     const progressPercentage = document.getElementById('progress-percentage');
     const errorMessage = document.getElementById('error-message');
     const errorText = document.getElementById('error-text');
+    const textInput = document.getElementById('text-input') as HTMLTextAreaElement | null;
+    const processTextButton = document.getElementById('process-text-button');
     
     // Event: Click browse button
     browseButton?.addEventListener('click', () => {
@@ -94,9 +114,10 @@ const supportedFormats = parserRegistry.getSupportedFileTypes();
     });
     
     // Event: File selected via input
-    fileInput?.addEventListener('change', (event) => {
-      const input = event.target;
-      if (input.files && input.files.length > 0) {
+    fileInput?.addEventListener('change', (event: Event) => { // Add type to event
+      // Cast event.target to HTMLInputElement
+      const input = event.target as HTMLInputElement | null;
+      if (input?.files && input.files.length > 0) { // Check if input exists before accessing files
         handleFile(input.files[0]);
       }
     });
@@ -121,9 +142,19 @@ const supportedFormats = parserRegistry.getSupportedFileTypes();
         handleFile(event.dataTransfer.files[0]);
       }
     });
+
+    // Event: Click process text button
+    processTextButton?.addEventListener('click', () => {
+      if (textInput?.value) {
+        handlePastedText(textInput.value);
+      } else {
+        showError("Please paste some text before processing.");
+      }
+    });
     
     // Handle the uploaded file
-    function handleFile(file) {
+    // Add type annotation for file parameter
+    function handleFile(file: File) {
       // Hide any previous errors
       errorMessage?.classList.add('hidden');
       
@@ -159,21 +190,58 @@ const supportedFormats = parserRegistry.getSupportedFileTypes();
         }, 50);
       }
     }
+
+    // Handle pasted text
+    // Add type annotation for text parameter
+    function handlePastedText(text: string) {
+      // Hide any previous errors
+      errorMessage?.classList.add('hidden');
+
+      // Create a Blob and then a File object from the text
+      const blob = new Blob([text], { type: 'text/plain' });
+      // Use a generic filename, as we don't have one from pasting
+      const file = new File([blob], "pasted_content.txt", { type: "text/plain" });
+
+      // Dispatch the same event as file upload
+      const pasteEvent = new CustomEvent('file-selected', {
+        detail: { file }
+      });
+      document.dispatchEvent(pasteEvent);
+
+      // Show progress (similar to file upload, but instant completion)
+      if (uploadProgress && fileName && progressBar && progressPercentage) {
+        fileName.textContent = file.name;
+        uploadProgress.classList.remove('hidden');
+        progressBar.style.width = '100%'; // Show as complete immediately
+        progressPercentage.textContent = '100%';
+
+        // Dispatch upload complete event immediately for pasted text
+        document.dispatchEvent(new CustomEvent('file-upload-complete', {
+          detail: { file }
+        }));
+      }
+    }
     
     // Handle upload errors
     document.addEventListener('file-upload-error', (event) => {
-      const customEvent = event;
+      const customEvent = event as CustomEvent; // Add type cast
       const error = customEvent.detail?.error || 'Unknown error';
       
+      showError(error);
+    }); // End of file-upload-error listener
+
+    // Helper to show errors (Moved outside the event listener)
+    // Add type annotation for message parameter
+    function showError(message: any) {
       if (errorMessage && errorText) {
-        errorText.textContent = error;
+        errorText.textContent = String(message); // Ensure message is a string
         errorMessage.classList.remove('hidden');
       }
-      
+
       if (uploadProgress) {
         uploadProgress.classList.add('hidden');
       }
-    });
+    } // End of showError function
   });
 </script>
 

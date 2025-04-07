@@ -34,7 +34,7 @@ A privacy-first document redaction tool that operates entirely in the browser. D
 ## 📱 Live Demo
 
 You can access the live version of DocScrub on GitHub Pages:
-[https://YOUR_USERNAME.github.io/DocSrcub](https://dathtd119.github.io/DocSrcub)
+[Live Github Page](https://dathtd119.github.io/DocSrcub)
 
 ## 🛠️ Development
 
